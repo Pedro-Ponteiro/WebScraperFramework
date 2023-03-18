@@ -15,13 +15,15 @@ class ListPage:
         url: str,
         listpage_setup_func: Callable[[webdriver.Chrome], None],
         listpage_xpaths_attributes: str,
-        url_processing: Callable[[str], str],
+        url_formatting: Callable[[str], str],
     ) -> None:
         self.wd = wd
         self.url = url
         self.xpaths_attributes = listpage_xpaths_attributes
         self.wd.get(self.url)
-        self.url_processing = url_processing
+        self.url_formatting = lambda x: x
+        if url_formatting:
+            self.url_formatting = url_formatting
         if listpage_setup_func:
             listpage_setup_func(self.wd)
 
@@ -32,7 +34,7 @@ class ListPage:
             elements_found = self.wd.find_elements(By.XPATH, xpath)
 
             urls = [elem.get_attribute(attribute) for elem in elements_found]
-            urls = [self.url_processing(url) for url in urls if url is not None]
+            urls = [self.url_formatting(url) for url in urls if url is not None]
 
             collected_urls.extend(urls)
             collected_urls = list(set(collected_urls))
@@ -40,7 +42,6 @@ class ListPage:
             if limit and limit <= len(collected_urls):
                 collected_urls = collected_urls[:limit]
                 break
-
         return collected_urls
 
     def fetch_until_limit(self, limit, fetch_function):
